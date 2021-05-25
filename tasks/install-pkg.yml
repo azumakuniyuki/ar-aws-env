@@ -29,7 +29,7 @@
 
     - name: install-pkg | Amazon | aws-cli v2 archive should be extracted
       unarchive:
-        src:     "{{ aws.workingdir }}/src/local/src/awscli-exe-linux-x86_64.zip"
+        src:     "{{ aws.workingdir }}/awscli-exe-linux-x86_64.zip"
         dest:    "{{ aws.workingdir }}"
         creates: "{{ aws.workingdir }}/aws"
         copy:    "no"
