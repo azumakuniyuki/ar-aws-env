@@ -1,0 +1,43 @@
+---
+#                                            ___            _        
+#   __ ___      _____        ___ _ ____   __/ / |_ __ _ ___| | _____ 
+#  / _` \ \ /\ / / __|_____ / _ \ '_ \ \ / / /| __/ _` / __| |/ / __|
+# | (_| |\ V  V /\__ \_____|  __/ | | \ V / / | || (_| \__ \   <\__ \
+#  \__,_| \_/\_/ |___/      \___|_| |_|\_/_/   \__\__,_|___/_|\_\___/
+#                                                                    
+# install-pkg
+# -----------------------------------------------------------------------------
+- block:
+    - name: install-pkg | Amazon | EPEL repository should be enabled
+      when: ansible_distribution == "Amazon"
+      shell: >
+        amazon-linux-extras list
+        |  grep epel
+        |  grep enabled
+        || amazon-linux-extras enable epel
+      changed_when: false
+
+    - name: install-pkg | Amazon | Each repository should be installed
+      yum:
+        name:  "{{ aws.repositories }}"
+        state: "present"
+
+    - name: install-pkg | Amazon | aws-cli v2 archive should be downloaded
+      get_url:
+        url:  "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "{{ aws.workingdir }}"
+
+    - name: install-pkg | Amazon | aws-cli v2 archive should be extracted
+      unarchive:
+        src:     "{{ aws.workingdir }}/src/local/src/awscli-exe-linux-x86_64.zip"
+        dest:    "{{ aws.workingdir }}"
+        creates: "{{ aws.workingdir }}/aws"
+        copy:    "no"
+
+    - name: install-pkg | Amazon | aws-cli v2 should be installed
+      shell: /bin/sh ./install
+      args:
+        chdir:   "{{ aws.workingdir }}/aws"
+        creates: "/usr/local/bin/aws"
+  when: ansible_distribution == "Amazon"
+

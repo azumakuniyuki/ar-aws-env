@@ -1,0 +1,18 @@
+---
+#                                            ___            _        
+#   __ ___      _____        ___ _ ____   __/ / |_ __ _ ___| | _____ 
+#  / _` \ \ /\ / / __|_____ / _ \ '_ \ \ / / /| __/ _` / __| |/ / __|
+# | (_| |\ V  V /\__ \_____|  __/ | | \ V / / | || (_| \__ \   <\__ \
+#  \__,_| \_/\_/ |___/      \___|_| |_|\_/_/   \__\__,_|___/_|\_\___/
+#                                                                    
+# make-config
+- name: make-config | Timezone should be configured (1)
+  register: timezone
+  ignore_errors: true
+  changed_when: false
+  shell: timedatectl status | grep "{{ aws.timezone }}"
+
+- name: make-config | Timezone should be configured (2)
+  when: timezone.rc == 1
+  shell: timedatectl set-timezone {{ aws.timezone }}
+
