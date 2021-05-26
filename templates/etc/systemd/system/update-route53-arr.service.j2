@@ -1,0 +1,12 @@
+[Unit]
+Description=Update A RR on Route53
+After=network.target
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/update-route53-arr
+
+[Install]
+WantedBy=multi-user.target
+

@@ -8,4 +8,7 @@
 # tasks file for ar-aws-env
 - include: install-pkg.yml
 - include: make-config.yml
+- include: route53-arr.yml
+  when:    aws.route53arr.enabled == true
 - include: build-local.yml
+

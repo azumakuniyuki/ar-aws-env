@@ -1,0 +1,48 @@
+---
+#                                            ___            _        
+#   __ ___      _____        ___ _ ____   __/ / |_ __ _ ___| | _____ 
+#  / _` \ \ /\ / / __|_____ / _ \ '_ \ \ / / /| __/ _` / __| |/ / __|
+# | (_| |\ V  V /\__ \_____|  __/ | | \ V / / | || (_| \__ \   <\__ \
+#  \__,_| \_/\_/ |___/      \___|_| |_|\_/_/   \__\__,_|___/_|\_\___/
+#                                                                    
+# route53-arr
+- name: route53-arr | /usr/local/etc/aws directory should be created
+  file:
+    path:  "/usr/local/etc/aws"
+    mode:  "0755"
+    owner: "root"
+    group: "root"
+    state: "directory"
+
+- name: route53-arr | boto3 package should be installed 
+  shell: pip3 install boto3
+  args:
+    creates: "/usr/local/lib/python3.7/site-packages/boto3"
+
+- name: route53-arr | update-route53-arr should be deployed
+  template:
+    src:   "usr/local/sbin/update-route53-arr.j2"
+    dest:  "/usr/local/sbin/update-route53-arr"
+    mode:  "0754"
+    owner: "root"
+    group: "wheel"
+
+- name: route53-arr | update-route53-arr.service should be deployed
+  register: update_route53_arr_service
+  template:
+    src:   "etc/systemd/system/update-route53-arr.service.j2"
+    dest:  "/etc/systemd/system/update-route53-arr.service"
+    mode:  "0644"
+    owner: "root"
+    group: "root"
+
+- name: route53-arr | update-route53-arr.service should be reloaded
+  when: update_route53_arr_service.changed
+  systemd:
+    daemon_reload: "yes"
+
+- name: route53-arr | update-route53-arr.service should be reloaded
+  systemd:
+    name:    "update-route53-arr"
+    enabled: "yes"
+

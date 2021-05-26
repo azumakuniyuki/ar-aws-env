@@ -11,4 +11,6 @@ aws:
   workingdir: "/usr/local/src"
   repositories:
     - "https://rpms.remirepo.net/enterprise/remi-release-7.rpm"
+  route53arr:
+    enabled: false
 

@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+# UPDATE Route53: Set the current IP address into the value of A resource record of the hostname
+import os
+import sys
+import stat
+import boto3
+import subprocess
+
+VERISON    = '0.0.5'
+PROGPREFIX = 'update-route53-arr-'
+SETTINGDIR = '/usr/local/etc/aws/'
+CREDENTIAL = {
+    'accesskey': SETTINGDIR + PROGPREFIX + 'access-key-id',
+    'secretkey': SETTINGDIR + PROGPREFIX + 'secret-key-id'
+}
+ZONEIDFILE = SETTINGDIR + PROGPREFIX + 'hostedzone-id'
+HOSTSTABLE = SETTINGDIR + PROGPREFIX + 'hostname-list'
+PUBLICIPv4 = 'http://169.254.169.254/latest/meta-data/public-ipv4'
+TIMETOLIVE = 60
+
+if len(sys.argv) > 1 and sys.argv[1] == 'init':
+    # $ ls -laF /usr/local/etc/aws/
+    # total 16
+    # -rw------- 1 root root 21 May 25 07:29 update-route53-arr-access-key-id
+    # -rw------- 1 root root 21 May 25 07:29 update-route53-arr-hostedzone-id
+    # -rw-r--r-- 1 root root 21 May 25 07:29 update-route53-arr-hostname-list
+    # -rw------- 1 root root 41 May 25 07:30 update-route53-arr-secret-key-id
+    #
+    for f in [CREDENTIAL['accesskey'], CREDENTIAL['secretkey'], ZONEIDFILE, HOSTSTABLE]:
+        if not os.path.isfile(f):
+            # Create the file
+            with open(f, 'w', encoding="UTF-8") as p:
+                pass
+            os.chown(f, 0, 0)
+            os.chmod(f, stat.S_IRUSR | stat.S_IWUSR)
+
+else:
+    # Read credentials and update the public IPv4 address on Route 53
+    ROUTE53ZONE = subprocess.check_output('cat ' + ZONEIDFILE, shell=True).decode().strip('\n')
+    ACCESSKEYID = subprocess.check_output('cat ' + CREDENTIAL['accesskey'], shell=True).decode().strip('\n')
+    SECRETKEYID = subprocess.check_output('cat ' + CREDENTIAL['secretkey'], shell=True).decode().strip('\n')
+    MyHostnames = []
+    with open(HOSTSTABLE, 'r') as p:
+        MyHostnames = p.read().split("\n")
+
+    currentaddress = subprocess.check_output('/bin/curl -sq ' + PUBLICIPv4, shell=True).decode().strip('\n')
+    route53request = boto3.client('route53',
+            aws_access_key_id     = ACCESSKEYID,
+            aws_secret_access_key = SECRETKEYID
+    )
+
+    for e in MyHostnames:
+        # Check and update A RR with the current public IPv4 address
+        if e == "":
+            continue
+
+        route53details = route53request.list_resource_record_sets(
+            HostedZoneId    = ROUTE53ZONE,
+            StartRecordName = e,
+            StartRecordType = 'A',
+            MaxItems        = '1'
+        )
+        currentarecord = route53details['ResourceRecordSets'][0]['ResourceRecords'][0]['Value']
+
+        if currentaddress != currentarecord:
+            toberegistered = { 'Name': e, 'Type': 'A', 'TTL': TIMETOLIVE,
+                               'ResourceRecords': [{ 'Value': currentaddress }] }
+            route53details = route53request.change_resource_record_sets(
+                HostedZoneId = ROUTE53ZONE,
+                ChangeBatch  = { 'Changes': [{ 'Action': 'UPSERT', 'ResourceRecordSet': toberegistered }] }
+            )
+        else:
+            continue
+    # End of for
+# End of if sys.argv
