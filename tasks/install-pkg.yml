@@ -39,5 +39,10 @@
       args:
         chdir:   "{{ aws.workingdir }}/aws"
         creates: "/usr/local/bin/aws"
+
+    - name: install-pkg | Amazon | CloudWatch agent should be installed
+      yum:
+        state: "present"
+        name: "https://s3.{{ aws.region }}.amazonaws.com/amazoncloudwatch-agent-{{ aws.region }}/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm"
   when: ansible_distribution == "Amazon"
 
